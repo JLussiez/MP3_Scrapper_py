@@ -12,7 +12,7 @@ def get_json(url, limit, page):
     url_json = url + "/products.json?limit=" + limit + '&page=' + page
     try:
         response = requests.get(url_json)
-        response.raise_for_status()  # Gestion error HTTP
+        response.raise_for_status()  # Gestion erreur HTTP
         text = response.text
         datas = json.loads(text)
         products = []
@@ -39,7 +39,6 @@ def get_json(url, limit, page):
 
 products = get_json(url, limit, page)
 
-
 def json_to_df(products):
     try:
         # Créer une DataFrame principale à partir des produits
@@ -58,23 +57,32 @@ def get_others(df_main):
         df_variants = pd.json_normalize(df_main['variants']).add_prefix('variants_')
         df_images = pd.json_normalize(df_main['images']).add_prefix('images_')
         df_options = pd.json_normalize(df_main['options']).add_prefix('options_')
+        
+        # Supprimer les colonnes d'origine dans df_main
+        df_main = df_main.drop(['variants', 'images', 'options'], axis=1)
+        
         # Concaténer les DataFrames dénormalisées avec la DataFrame principale
-        df_result = pd.concat([df_main, df_variants, df_images, df_options], axis=1)
+        df_result = pd.concat([df_main, df_variants.iloc[:, 0:], df_images.iloc[:, 0:], df_options.iloc[:, 0:]], axis=1)
+        print(df_result)
         print(df_result.iloc[0])
         return df_result
     except json.JSONDecodeError as e:
         print(f"Erreur lors du décodage JSON : {e}")
         return None
 
-get_others(df_main)
+df_result = get_others(df_main)
+
+
 
 
 
 # 6/
-# def get_csv(df_variants, filename="output.csv"):
-#     try:
-#         # Utiliser to_csv pour générer le fichier CSV
-#         df_variants.to_csv(filename, index=False)
-#         print(f"Le fichier CSV '{filename}' a été généré avec succès.")
-#     except Exception as e:
-#         print(f"Une erreur s'est produite lors de la génération du fichier CSV : {e}")
+def get_csv(df_result, filename="output.csv"):
+    try:
+        # Utiliser to_csv pour générer le fichier CSV
+        df_result.to_csv(filename, index=False)
+        print(f"Le fichier CSV '{filename}' a été généré avec succès.")
+    except Exception as e:
+        print(f"Une erreur s'est produite lors de la génération du fichier CSV : {e}")
+        
+get_csv(df_result)
